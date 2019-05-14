@@ -1,7 +1,5 @@
 # Analysis on Catch Rate for Pokémon Go
 
-Han Yan(hy1596, @bilin00) 
-
 Zhixia Zhang(zz2445, @bigbro0991) 
 
 Lingfeng Zhao(lz1973, @zhaobenx) 
