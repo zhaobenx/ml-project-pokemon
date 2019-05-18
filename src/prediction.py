@@ -14,6 +14,10 @@ from sklearn.metrics import r2_score
 from sklearn.model_selection import train_test_split, KFold
 from sklearn.decomposition import PCA
 
+import torch
+import torch.nn.functional as F
+import torch.nn as nn
+import torch.utils.data as utils
 # %%
 df = pd.read_csv("pokemon_alopez247.csv", sep=",")
 
@@ -34,12 +38,7 @@ print(df.info())
 
 # %%
 df1 = df.copy()
-# type_ = pd.get_dummies(df.Type_1, prefix='Type') + pd.get_dummies(df.Type_2,prefix='Type')
-# color = pd.get_dummies(df.Color, prefix='Color')
-# egg_group = pd.get_dummies(df.Egg_Group_1, prefix='Egg_group') + pd.get_dummies(df.Egg_Group_2,prefix='Egg_group')
-# body_style = pd.get_dummies(df.Body_Style, prefix='Body_style')
-# df1 = df1.drop(['Type_1', 'Type_2', 'Color','Egg_Group_1', 'Egg_Group_2', 'Body_Style'],axis=1)
-# df1 = pd.concat([df1, type_, color, egg_group, body_style],axis=1,)
+
 df1 = pd.get_dummies(data=df1, columns=['Type_1', 'Type_2'], prefix='Type')
 df1 = pd.get_dummies(data=df1, columns=['Color'], prefix='Color')
 df1 = pd.get_dummies(data=df1, columns=['Egg_Group_1', 'Egg_Group_2'], prefix='Egg_Group')
@@ -70,6 +69,11 @@ scaling = StandardScaler()
 scaling.fit(X)
 X_n = scaling.transform(X)
 
+
+def score(model, x, y):
+    return 1 - np.mean((model.predict(x) - y)**2)
+
+
 n_run = 5
 train_scores = []
 test_scores = []
@@ -79,12 +83,12 @@ for i in range(n_run):
     regr = LinearRegression()
     regr.fit(Xtr, ytr)
     yhat = regr.predict(Xts)
-    train_scores.append(regr.score(Xtr, ytr))
-    test_scores.append(regr.score(Xts, yts))
+    train_scores.append(score(regr, Xtr, ytr))
+    test_scores.append(score(regr, Xts, yts))
     coeffs.append(regr.coef_)
 
 # print(test_scores)
-print(f"Train R^2 score is {np.max(train_scores)}, test R^2 score is {np.max(test_scores)}.")
+print(f"Train score is {np.max(train_scores)}, test score is {np.max(test_scores)}.")
 best = np.argmax(test_scores)
 best_coef = coeffs[best]
 # print(best_coef)
@@ -115,11 +119,11 @@ for alpha in alphas:
         regr.fit(Xtr, ytr)
         #     print(f"Done {alpha}")
         yts_pred = regr.predict(Xts)
-        train_scores.append(regr.score(Xtr, ytr))
-        test_scores.append(regr.score(Xts, yts))
+        train_scores.append(score(regr, Xtr, ytr))
+        test_scores.append(score(regr, Xts, yts))
         coeffs.append(regr.coef_)
 
-print(f"Best train R^2 score is {np.max(train_scores)}, test R^2 score is {np.max(test_scores)}.")
+print(f"Best train score is {np.max(train_scores)}, test  score is {np.max(test_scores)}.")
 best = np.argmax(test_scores)
 best_coef = coeffs[best]
 # print(best_coef)
@@ -149,11 +153,11 @@ for alpha in alphas:
         Xtr, Xts, ytr, yts = train_test_split(X_n, y, test_size=0.33, shuffle=True)
         regr = Ridge(alpha=alpha)
         regr.fit(Xtr, ytr)
-        train_scores.append(regr.score(Xtr, ytr))
-        test_scores.append(regr.score(Xts, yts))
+        train_scores.append(score(regr, Xtr, ytr))
+        test_scores.append(score(regr, Xts, yts))
         coeffs.append(regr.coef_)
 
-print(f"Best train R^2 score is {np.max(train_scores)}, test R^2 score is {np.max(test_scores)}.")
+print(f"Best train score is {np.max(train_scores)}, test score is {np.max(test_scores)}.")
 best = np.argmax(test_scores)
 best_coef = coeffs[best]
 # print(best_coef)
@@ -170,35 +174,6 @@ plt.show()
 # %% [markdown]
 # ### d. Linear regression with PCA
 
-# %%
-nfold = 5
-
-# Create a K-fold object
-kf = KFold(n_splits=nfold)
-kf.get_n_splits(X_n)
-
-# Number of PCs to try
-ncomp_test = np.arange(2, 100)
-num_nc = len(ncomp_test)
-
-acc = np.zeros((num_nc, nfold))
-
-for icomp, ncomp in enumerate(ncomp_test):
-
-    for ifold, I in enumerate(kf.split(X)):
-        Itr, Its = I
-
-        Xtr, Xts, ytr, yts = X_n[Itr], X_n[Its], y[Itr], y[Its]
-
-        pca = PCA(n_components=ncomp, svd_solver='randomized', whiten=True)
-        Xtr_transform = pca.fit_transform(Xtr)
-
-        regr = LinearRegression()
-        regr.fit(Xtr_transform, ytr)
-        Xts_transform = pca.fit_transform(Xts)
-        #         yhat = logreg.predict(Xts)
-
-        acc[icomp, ifold] = regr.score(Xts_transform, yts)
 
 # %%
 n_run = 10
@@ -221,13 +196,13 @@ for ncomp in ncomp_test:
         regr.fit(Xtr_transform, ytr)
         Xts_transform = pca.fit_transform(Xts)
 
-        train_scores.append(regr.score(Xtr_transform, ytr))
-        test_scores.append(regr.score(Xts_transform, yts))
+        train_scores.append(score(regr, Xtr_transform, ytr))
+        test_scores.append(score(regr, Xts_transform, yts))
         coeffs.append(regr.coef_)
 
 # %%
 # best = np.argmax(acc)
-print(f"Best train R^2 score is {np.max(train_scores)}, test R^2 score is {np.max(test_scores)}.")
+print(f"Best train  score is {np.max(train_scores)}, test score is {np.max(test_scores)}.")
 # print(train_scores)
 # print(test_scores)
 train_scores = np.array(train_scores).reshape(num_nc, -1)
@@ -240,5 +215,70 @@ plt.plot(train_mean)
 plt.plot(test_mean)
 plt.legend(['Train', 'Test'])
 plt.show()
+
+# %% [markdown]
+# ### e. With neural network
+
+# %%
+
+
+class Net(nn.Module):
+    def __init__(self, n):
+        super(Net, self).__init__()
+        self.fc1 = nn.Linear(n, 500)
+        self.fc2 = nn.Linear(500, 1000)
+        self.fc3 = nn.Linear(1000, 1)
+
+    def forward(self, x):
+        x = self.fc1(x)
+        x = F.relu(x)
+        x = self.fc2(x)
+        x = F.relu(x)
+        x = self.fc3(x)
+        return F.relu(x)
+
+
+lr = 0.001
+momentum = 0.01
+epochs = 50
+batch_size = 50
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+dataset = utils.TensorDataset(torch.Tensor(X_n), torch.Tensor(y))
+dataloader = utils.DataLoader(dataset, batch_size=50, shuffle=True)
+
+
+# Use GPU
+model = Net(X_n.shape[1]).to(device)
+optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=momentum)
+criterion = nn.MSELoss()
+train_scores = []
+
+for epoch in range(1, epochs + 1):
+    epoch_loss = 0
+    score = 0
+    model = model.train()
+    for index, data in enumerate(dataloader):
+        x_, y_ = data
+        x_, y_ = x_.to(device), y_.to(device)
+        pred = model(x_)
+        loss = criterion(pred, y_)
+        # loss =
+        epoch_loss += loss.item()
+
+        # print(f"{index*batch_size:.4f} --- loss: {loss.item()/batch_size:.6f}")
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+    with torch.no_grad():
+        X_val = torch.FloatTensor(X_n).to(device)
+        result = model(X_val)
+        pred = result.cpu().numpy()
+        # score = r2_score(y, pred)
+        score = 1 - np.mean((y - pred[0, :])**2)
+    train_scores.append(score)
+    print(f'Epoch {epoch} finished! Loss: {epoch_loss / len(dataset):.4f} Score: {score:.6f}')
+    torch.save(model.state_dict(), 'saved.model')
+
 
 # %%
