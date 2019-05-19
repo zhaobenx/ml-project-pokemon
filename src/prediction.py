@@ -18,22 +18,25 @@ import torch
 import torch.nn.functional as F
 import torch.nn as nn
 import torch.utils.data as utils
+
+
 # %%
 df = pd.read_csv("pokemon_alopez247.csv", sep=",")
+
 
 # %%
 print(df.head(6))
 print(df.info())
 
 # %% [markdown]
-# # Prediction
+#  # Prediction
 #
-# ## 1.  Data preprocessed
+#  ## 1.  Data preprocessed
 #
 #
-# Convert text labels to one hot code.
+#  Convert text labels to one hot code.
 #
-# 选择one hot的原因 [Reason](http://queirozf.com/entries/one-hot-encoding-a-feature-on-a-pandas-dataframe-an-example)
+#  选择one hot的原因 [Reason](http://queirozf.com/entries/one-hot-encoding-a-feature-on-a-pandas-dataframe-an-example)
 #
 
 # %%
@@ -46,7 +49,7 @@ df1 = pd.get_dummies(data=df1, columns=['Body_Style'], prefix='Body_Style')
 df1 = df1.fillna(0)
 
 # %% [markdown]
-# Generate X and y from the dataset.
+#  Generate X and y from the dataset.
 
 # %%
 # X = df1.loc[:, df1.columns != 'Name']
@@ -58,11 +61,13 @@ n_channel = X.shape[1]
 print(f'Number of samples: {n_sample}\nNumber of features: {n_channel}')
 
 # %% [markdown]
-# ## 2. Linear prediction
+#  ## 2. Linear prediction
 #
-# ### a. Basic linear regression
 #
-# First do the normalization. Then do the linear regression.
+# %% [markdown]
+#  ### a. Basic linear regression
+#
+#  First do the normalization. Then do the linear regression.
 
 # %%
 scaling = StandardScaler()
@@ -85,12 +90,12 @@ for i in range(n_run):
     yhat = regr.predict(Xts)
     train_scores.append(score(regr, Xtr, ytr))
     test_scores.append(score(regr, Xts, yts))
-    coeffs.append(regr.coef_)
+    coeffs.append(regr)
 
 # print(test_scores)
 print(f"Train score is {np.max(train_scores)}, test score is {np.max(test_scores)}.")
 best = np.argmax(test_scores)
-best_coef = coeffs[best]
+best_coef = coeffs[best].coef_
 # print(best_coef)
 plt.figure(figsize=(20, 16))
 plt.stem(best_coef)
@@ -100,8 +105,17 @@ plt.title('Coefficients')
 plt.xticks(range(n_channel), labels, rotation=90)
 plt.show()
 
+plt.figure(figsize=(10, 8))
+plt.plot(yts, coeffs[best].predict(Xts), 'o')
+plt.plot(yts, yts)
+plt.xlabel('yts')
+plt.ylabel('yhat')
+plt.title('Comparasion on test and predicted data')
+plt.legend(['prediction', 'true relation'])
+plt.show()
+
 # %% [markdown]
-# ### b. Linear regression with LASSO
+#  ### b. Linear regression with LASSO
 
 # %%
 nalpha = 10
@@ -121,13 +135,13 @@ for alpha in alphas:
         yts_pred = regr.predict(Xts)
         train_scores.append(score(regr, Xtr, ytr))
         test_scores.append(score(regr, Xts, yts))
-        coeffs.append(regr.coef_)
+        coeffs.append(regr)
 
 print(f"Best train score is {np.max(train_scores)}, test  score is {np.max(test_scores)}.")
 best = np.argmax(test_scores)
-best_coef = coeffs[best]
+best_coef = coeffs[best].coef_
 # print(best_coef)
-prominent_labels = labels[np.abs(best_coef).argsort()[-6:]]
+prominent_labels = labels[np.abs(best_coef).argsort()[-6:]][::-1]
 print(f"Six most prominent features are {', '.join(prominent_labels)}")
 plt.figure(figsize=(20, 16))
 plt.stem(best_coef)
@@ -137,8 +151,17 @@ plt.title('Coefficients')
 plt.xticks(range(n_channel), labels, rotation=90)
 plt.show()
 
+plt.figure(figsize=(10, 8))
+plt.plot(yts, coeffs[best].predict(Xts), 'o')
+plt.plot(yts, yts)
+plt.xlabel('yts')
+plt.ylabel('yhat')
+plt.title('Comparasion on test and predicted data')
+plt.legend(['prediction', 'true relation'])
+plt.show()
+
 # %% [markdown]
-# ### c. Linear regression with Ridge
+#  ### c. Linear regression with Ridge
 
 # %%
 nalpha = 20
@@ -155,13 +178,13 @@ for alpha in alphas:
         regr.fit(Xtr, ytr)
         train_scores.append(score(regr, Xtr, ytr))
         test_scores.append(score(regr, Xts, yts))
-        coeffs.append(regr.coef_)
+        coeffs.append(regr)
 
 print(f"Best train score is {np.max(train_scores)}, test score is {np.max(test_scores)}.")
 best = np.argmax(test_scores)
-best_coef = coeffs[best]
+best_coef = coeffs[best].coef_
 # print(best_coef)
-prominent_labels = labels[np.abs(best_coef).argsort()[-6:]]
+prominent_labels = labels[np.abs(best_coef).argsort()[-6:]][::-1]
 print(f"Six most prominent features are {', '.join(prominent_labels)}")
 plt.figure(figsize=(20, 16))
 plt.stem(best_coef)
@@ -171,9 +194,17 @@ plt.title('Coefficients')
 plt.xticks(range(n_channel), labels, rotation=90)
 plt.show()
 
-# %% [markdown]
-# ### d. Linear regression with PCA
+plt.figure(figsize=(10, 8))
+plt.plot(yts, coeffs[best].predict(Xts), 'o')
+plt.plot(yts, yts)
+plt.xlabel('yts')
+plt.ylabel('yhat')
+plt.title('Comparasion on test and predicted data')
+plt.legend(['prediction', 'true relation'])
+plt.show()
 
+# %% [markdown]
+#  ### d. Linear regression with PCA
 
 # %%
 n_run = 10
@@ -200,6 +231,7 @@ for ncomp in ncomp_test:
         test_scores.append(score(regr, Xts_transform, yts))
         coeffs.append(regr.coef_)
 
+
 # %%
 # best = np.argmax(acc)
 print(f"Best train  score is {np.max(train_scores)}, test score is {np.max(test_scores)}.")
@@ -217,7 +249,7 @@ plt.legend(['Train', 'Test'])
 plt.show()
 
 # %% [markdown]
-# ### e. With neural network
+#  ### e. With neural network
 
 # %%
 
@@ -225,34 +257,36 @@ plt.show()
 class Net(nn.Module):
     def __init__(self, n):
         super(Net, self).__init__()
-        self.fc1 = nn.Linear(n, 500)
-        self.fc2 = nn.Linear(500, 1000)
-        self.fc3 = nn.Linear(1000, 1)
+        self.net = nn.Sequential(
+            nn.Linear(n, 1000),
+            nn.ReLU(),
+            nn.Linear(1000, 1000),
+            nn.ReLU(),
+            nn.Linear(1000, 1),
+            nn.ReLU()
+        )
 
     def forward(self, x):
-        x = self.fc1(x)
-        x = F.relu(x)
-        x = self.fc2(x)
-        x = F.relu(x)
-        x = self.fc3(x)
-        return F.relu(x)
+        return self.net(x)
 
 
 lr = 0.001
-momentum = 0.01
-epochs = 50
+
+epochs = 100
 batch_size = 50
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 dataset = utils.TensorDataset(torch.Tensor(X_n), torch.Tensor(y))
 dataloader = utils.DataLoader(dataset, batch_size=50, shuffle=True)
 
+print(f"Running on device {device}")
 
 # Use GPU
 model = Net(X_n.shape[1]).to(device)
-optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=momentum)
+optimizer = torch.optim.SGD(model.parameters(), lr=lr)
 criterion = nn.MSELoss()
 train_scores = []
+losses = []
 
 for epoch in range(1, epochs + 1):
     epoch_loss = 0
@@ -261,9 +295,10 @@ for epoch in range(1, epochs + 1):
     for index, data in enumerate(dataloader):
         x_, y_ = data
         x_, y_ = x_.to(device), y_.to(device)
-        pred = model(x_)
+        pred = model(x_).view(-1)
+#         print(y_.shape, pred.shape)
         loss = criterion(pred, y_)
-        # loss =
+#         loss = torch.mean((pred - y_)**2)
         epoch_loss += loss.item()
 
         # print(f"{index*batch_size:.4f} --- loss: {loss.item()/batch_size:.6f}")
@@ -277,8 +312,30 @@ for epoch in range(1, epochs + 1):
         # score = r2_score(y, pred)
         score = 1 - np.mean((y - pred[0, :])**2)
     train_scores.append(score)
-    print(f'Epoch {epoch} finished! Loss: {epoch_loss / len(dataset):.4f} Score: {score:.6f}')
+    losses.append(epoch_loss / len(dataset))
+#     print(f'Epoch {epoch} finished! Loss: {epoch_loss / len(dataset):.4f} Score: {score:.6f}')
     torch.save(model.state_dict(), 'saved.model')
 
 
-# %%
+with torch.no_grad():
+    X_val = torch.FloatTensor(X_n).to(device)
+    result = model(X_val)
+    pred = result.cpu().numpy()
+    plt.figure(figsize=(10, 8))
+    plt.plot(y, pred, 'o')
+    plt.plot(y, y)
+    plt.xlabel('y')
+    plt.ylabel('yhat')
+    plt.title('Comparasion on real and predicted data')
+    plt.legend(['prediction', 'true relation'])
+    plt.show()
+
+plt.figure(figsize=(10, 8))
+plt.plot(train_scores, 'x-')
+# plt.plot(losses)
+plt.xlabel('epoch')
+plt.ylabel('score')
+plt.title('Score')
+# plt.legend(['Score', 'Loss'])
+
+plt.show()
