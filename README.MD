@@ -24,3 +24,9 @@ For Pokémon catch rate analysis,we can try Linear Regression,Random Forest and 
 * Data Source:
 
 [https://www.kaggle.com/alopez247/pokemon](https://www.kaggle.com/alopez247/pokemon)
+
+## Code and report
+
+The code can be found in the `src` folder [pokemon_analyze.ipynb](./src/pokemon_analyze.ipynb)， and there is also a pdf vision of this `ipynb`. Other files in this folder is used for developing.
+
+The report can be found in the docs folder.
