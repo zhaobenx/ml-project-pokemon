@@ -29,5 +29,5 @@ For Pokémon catch rate analysis,we can try Linear Regression,Random Forest and 
 
 The code and the dataset can be found under the `src` folder [pokemon_analyze.ipynb](./src/pokemon_analyze.ipynb)， and there is also a pdf vision of this `ipynb`. Other files in this folder is used for developing.
 
-The report can be found  [report_final.pdf](.report_final.pdf) .
+The report can be found  [report_final.pdf](report_final.pdf) .
 
